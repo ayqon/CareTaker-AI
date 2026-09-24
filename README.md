@@ -10,10 +10,13 @@
 [![AI Platform](https://img.shields.io/badge/Google%20Cloud-Vertex%20AI%20%26%20Gemini-4285F4.svg?logo=google-cloud&logoColor=white)](https://cloud.google.com/vertex-ai)
 [![Security Standard](https://img.shields.io/badge/Security-Secure%20by%20Design%20(WMG)-red.svg?logo=shield&logoColor=white)](#secure-by-design-security-architecture)
 [![Regulation](https://img.shields.io/badge/Compliance-CQC%20Regulation%2017-005ea2.svg)](#cqc-regulatory-compliance-framework)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-caretaker--ai.onrender.com-success.svg?logo=render&logoColor=white)](https://caretaker-ai-0mu3.onrender.com)
 [![Deploy to Render](https://img.shields.io/badge/Deploy-Render-46E3B7.svg?logo=render&logoColor=white)](#render-deployment-guide)
 [![Tests](https://img.shields.io/badge/Test%20Suite-7%20Passed%20(100%25)-brightgreen.svg?logo=pytest&logoColor=white)](#automated-test-suite)
 
 *A production-grade, secure multimodal AI platform empowering care workers, trainers, and healthcare supervisors through multilingual voice ingestion, semantic task matching, automated CQC Regulation 17 compliance reporting, AI practice mentor reviews, and demographic-tailored video training.*
+
+**Live Deployment:** [https://caretaker-ai-0mu3.onrender.com](https://caretaker-ai-0mu3.onrender.com)
 
 </div>
 
