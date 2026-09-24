@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}CareTaker - Create Task{% endblock %}
+
+{% block content %}
+<main class="max-w-2xl mx-auto mt-8 p-6">
+  <h2 class="text-2xl font-bold mb-6">Create New Task</h2>
+
+  <div class="bg-white rounded-lg border border-gray-200 p-6">
+    <p class="text-sm text-gray-500 mb-4">
+      Describe the task in your own words. AI will automatically structure it into clear, actionable points with priority and time estimates.
+    </p>
+
+    <form method="POST" action="/supervisor/tasks/create" id="task-form">
+      <div class="mb-4">
+        <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Task Description</label>
+        <textarea id="description" name="description" rows="6" required
+          class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="Describe the task in detail. For example: 'Clean the third floor break room, restock the vending machines, and make sure all the trash bins are emptied before the evening shift starts at 6pm.'"></textarea>
+      </div>
+
+      <div class="flex gap-3">
+        <button type="submit" id="submit-btn"
+          class="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded">
+          Create Task with AI
+        </button>
+        <a href="/supervisor" class="px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded">
+          Cancel
+        </a>
+      </div>
+    </form>
+  </div>
+
+  <div class="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+    <p class="text-sm text-blue-700">
+      <strong>How it works:</strong> The AI will analyze your description and generate:
+    </p>
+    <ul class="mt-2 text-sm text-blue-600 list-disc list-inside space-y-1">
+      <li>A concise title for the task</li>
+      <li>Numbered action points with details</li>
+      <li>Priority level (low/medium/high)</li>
+      <li>Estimated completion time</li>
+    </ul>
+    <p class="mt-2 text-sm text-blue-600">
+      Workers' submissions will be automatically matched to this task using AI semantic matching.
+    </p>
+  </div>
+</main>
+
+<script>
+  document.getElementById('task-form').addEventListener('submit', function() {
+    const btn = document.getElementById('submit-btn');
+    btn.textContent = 'AI is structuring your task...';
+    btn.disabled = true;
+    btn.classList.add('opacity-50');
+  });
+</script>
+{% endblock %}

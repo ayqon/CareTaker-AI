@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}CareTaker | AI-Powered Task & Compliance Management{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            },
+            colors: {
+              brand: {
+                50: '#f0f7ff',
+                100: '#e0effe',
+                500: '#005ea2',
+                600: '#004f8a',
+                700: '#003e6d',
+                900: '#0a192f',
+              },
+              emerald: {
+                500: '#10b981',
+                600: '#059669',
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      body { font-family: 'Plus Jakarta Sans', sans-serif; }
+      .glass-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(226, 232, 240, 0.8);
+      }
+    </style>
+  </head>
+  <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased selection:bg-blue-100 selection:text-blue-900">
+    <header class="bg-slate-900 border-b border-slate-800 text-white sticky top-0 z-50 shadow-md">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
+        <div class="flex items-center space-x-3">
+          <a href="/" class="flex items-center space-x-2 text-xl font-bold tracking-tight">
+            <span class="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white shadow-sm font-black text-base">C</span>
+            <span class="text-white">Care<span class="text-blue-400">Taker</span></span>
+          </a>
+          <span class="hidden md:inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-900/60 text-blue-300 border border-blue-700/50">
+            Secure Intelligence Edition
+          </span>
+        </div>
+
+        {% if current_user.is_authenticated %}
+          <div class="flex items-center space-x-2 sm:space-x-4 text-sm">
+            {% if current_user.role == 'supervisor' %}
+              <a href="/supervisor" class="px-3 py-1.5 rounded-md text-slate-200 hover:text-white hover:bg-slate-800 font-medium transition">Dashboard</a>
+              <a href="/supervisor/tasks/create" class="px-3 py-1.5 rounded-md bg-blue-600 hover:bg-blue-500 text-white font-semibold transition shadow-sm">New Task</a>
+              <a href="/supervisor/training/create" class="hidden sm:inline-block px-3 py-1.5 rounded-md bg-purple-600 hover:bg-purple-500 text-white font-semibold transition shadow-sm">New Training</a>
+            {% else %}
+              <a href="/worker" class="px-3 py-1.5 rounded-md text-slate-200 hover:text-white hover:bg-slate-800 font-medium transition">Dashboard</a>
+              <a href="/worker/profile" class="px-3 py-1.5 rounded-md text-slate-200 hover:text-white hover:bg-slate-800 font-medium transition">Profile</a>
+            {% endif %}
+            <div class="hidden lg:flex items-center space-x-2 pl-2 border-l border-slate-700">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span class="text-slate-300 font-medium">{{ current_user.username }}</span>
+              <span class="text-xs uppercase tracking-wider px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-bold">{{ current_user.role }}</span>
+            </div>
+            <a href="/logout" class="px-3 py-1.5 rounded-md text-red-400 hover:text-red-300 hover:bg-red-950/40 transition font-medium">Logout</a>
+          </div>
+        {% endif %}
+      </div>
+    </header>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="max-w-7xl mx-auto w-full mt-4 px-4 sm:px-6 lg:px-8">
+          {% for category, message in messages %}
+            <div class="p-4 rounded-xl mb-3 flex items-center justify-between text-sm shadow-sm transition-all {% if category == 'error' %}bg-red-50 text-red-800 border border-red-200{% else %}bg-emerald-50 text-emerald-800 border border-emerald-200{% endif %}">
+              <div class="flex items-center space-x-2">
+                {% if category == 'error' %}
+                  <svg class="w-5 h-5 text-red-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path></svg>
+                {% else %}
+                  <svg class="w-5 h-5 text-emerald-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+                {% endif %}
+                <span class="font-medium">{{ message }}</span>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <main class="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6">
+      {% block content %}{% endblock %}
+    </main>
+
+    <footer class="mt-auto bg-white border-t border-slate-200 py-6 text-center text-xs text-slate-500">
+      <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+        <p>CareTaker &bull; Secure Multimodal AI for Health & Social Care</p>
+        <p class="flex items-center space-x-2">
+          <span class="inline-block w-2 h-2 rounded-full bg-blue-500"></span>
+          <span>Google Vertex AI &bull; CQC Reg 17 &bull; Caldicott PII Shield</span>
+        </p>
+      </div>
+    </footer>
+  </body>
+</html>

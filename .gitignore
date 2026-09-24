@@ -1,0 +1,38 @@
+# Environment & Secrets (NEVER COMMIT KEYS)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.cert
+service-account*.json
+credentials.json
+
+# Python & Virtual Environments
+.venv/
+venv/
+env/
+ENV/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Database & Local Storage
+*.db
+*.sqlite
+*.sqlite3
+instance/
+static/uploads/*
+!static/uploads/.gitkeep
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# OS & IDE Artefacts
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp

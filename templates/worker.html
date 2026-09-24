@@ -1,0 +1,350 @@
+{% extends "base.html" %}
+
+{% block title %}CareTaker - Worker{% endblock %}
+
+{% block content %}
+
+<!-- Loading Overlay -->
+<div id="loading-overlay" class="hidden fixed inset-0 bg-gray-900 bg-opacity-70 z-50 flex items-center justify-center">
+  <div class="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full mx-4">
+    <div class="text-center">
+      <div class="inline-block mb-4">
+        <svg class="animate-spin h-10 w-10 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+        </svg>
+      </div>
+      <h3 id="loading-title" class="text-lg font-bold text-gray-900 mb-2">Processing...</h3>
+      <p id="loading-status" class="text-sm text-gray-500 mb-4">Starting AI analysis...</p>
+      <div class="w-full bg-gray-200 rounded-full h-2 mb-3">
+        <div id="loading-bar" class="bg-indigo-600 h-2 rounded-full transition-all duration-1000 ease-out" style="width: 0%"></div>
+      </div>
+      <p id="loading-step" class="text-xs text-gray-400">This may take 15-30 seconds</p>
+    </div>
+  </div>
+</div>
+
+<main class="max-w-4xl mx-auto mt-8 p-6 space-y-8">
+  <h2 class="text-2xl font-bold">Worker Dashboard</h2>
+
+  <section class="bg-white rounded-lg border border-gray-200 p-6">
+    <h3 class="text-lg font-semibold mb-4 text-gray-700">Submit Work</h3>
+    <p class="text-sm text-gray-500 mb-4">
+      Enter what you worked on in any language, or record a voice message.
+      AI will translate and match it to tasks.
+    </p>
+    <form method="POST" action="/worker/log" enctype="multipart/form-data" id="work-form">
+      <div class="mb-4">
+        <label for="work_text" class="block text-sm font-medium text-gray-700 mb-1">
+          Describe your work (any language)
+        </label>
+        <textarea id="work_text" name="work_text" rows="3"
+          class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="Type here in your preferred language..."></textarea>
+      </div>
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-2">Or record voice input</label>
+        <div class="flex items-center gap-3">
+          <button type="button" id="record-btn"
+            class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-sm rounded flex items-center gap-2">
+            <span id="record-icon">&#9679;</span>
+            <span id="record-text">Start Recording</span>
+          </button>
+          <span id="record-status" class="text-sm text-gray-500"></span>
+        </div>
+        <input type="file" name="audio" id="audio-input" class="hidden" accept="audio/*" />
+        <audio id="audio-preview" controls class="mt-2 hidden w-full"></audio>
+      </div>
+      <button type="submit" id="submit-btn"
+        class="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded">
+        Submit Work
+      </button>
+    </form>
+  </section>
+
+  {% if tasks %}
+  <section>
+    <h3 class="text-lg font-semibold mb-3 text-gray-700">Active Tasks</h3>
+    <div class="grid gap-3">
+      {% for t in tasks %}
+      <div class="p-4 bg-white rounded-lg border border-gray-200">
+        <div class="flex items-center gap-2 mb-1">
+          <span class="inline-flex px-2 py-0.5 text-xs font-semibold rounded-full
+            {% if t.priority == 'high' %}bg-red-100 text-red-800
+            {% elif t.priority == 'medium' %}bg-orange-100 text-orange-800
+            {% else %}bg-blue-100 text-blue-800{% endif %}">
+            {{ t.priority }}
+          </span>
+          <h4 class="font-medium text-gray-900">{{ t.title }}</h4>
+        </div>
+        <p class="text-sm text-gray-600">
+          {{ t.description[:150] }}{% if t.description|length > 150 %}...{% endif %}
+        </p>
+        {% if t.estimated_duration %}
+        <p class="mt-1 text-xs text-gray-400">Est: {{ t.estimated_duration }}</p>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  <section>
+    <h3 class="text-lg font-semibold mb-3 text-gray-700">
+      Your Work History ({{ logs | length }})
+    </h3>
+    {% if logs %}
+    <div class="space-y-3">
+      {% for log in logs %}
+      <div class="p-4 bg-white rounded-lg border border-gray-200">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-2">
+            <span class="text-xs px-2 py-0.5 bg-gray-100 rounded-full text-gray-600">
+              {{ log.original_language or 'unknown' }}
+            </span>
+            {% if log.task %}
+            <span class="text-xs px-2 py-0.5 bg-green-100 rounded-full text-green-700">
+              Matched: {{ log.task.title }} ({{ (log.match_score * 100) | int }}%)
+            </span>
+            {% else %}
+            <span class="text-xs px-2 py-0.5 bg-gray-100 rounded-full text-gray-500">Unmatched</span>
+            {% endif %}
+          </div>
+          <span class="text-xs text-gray-400">
+            {{ log.created_at.strftime('%Y-%m-%d %H:%M') if log.created_at else '' }}
+          </span>
+        </div>
+
+        <p class="text-sm text-gray-800"><strong>Original:</strong> {{ log.original_text }}</p>
+        {% if log.translated_text and log.translated_text != log.original_text %}
+        <p class="text-sm text-gray-600 mt-1"><strong>Translated:</strong> {{ log.translated_text }}</p>
+        {% endif %}
+
+        {% if log.cqc_report %}
+        {% set report = log.cqc_report | from_json %}
+        <div class="mt-3 p-4 rounded-lg border
+          {% if log.cqc_status == 'final' %}bg-green-50 border-green-200
+          {% elif log.cqc_status == 'in_review' %}bg-yellow-50 border-yellow-200
+          {% else %}bg-indigo-50 border-indigo-200{% endif %}">
+
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2">
+              <h4 class="text-sm font-bold
+                {% if log.cqc_status == 'final' %}text-green-900
+                {% elif log.cqc_status == 'in_review' %}text-yellow-900
+                {% else %}text-indigo-900{% endif %}">
+                CQC Report: {{ report.get('report_title', 'Care Record') }}
+              </h4>
+              {% if log.cqc_status == 'final' %}
+                <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-green-200 text-green-800">FINAL</span>
+              {% elif log.cqc_status == 'in_review' %}
+                <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-yellow-200 text-yellow-800">IN REVIEW</span>
+              {% else %}
+                <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-indigo-200 text-indigo-800">DRAFT</span>
+              {% endif %}
+            </div>
+
+            <div class="flex items-center gap-2">
+              {% if log.cqc_status == 'final' and log.cqc_report_final %}
+              <a href="/worker/log/{{ log.id }}/cqc-report/final/view" target="_blank"
+                class="text-xs px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700">
+                Open Final Report
+              </a>
+              {% endif %}
+
+              {% if log.cqc_status == 'in_review' %}
+              <a href="/worker/log/{{ log.id }}/cqc-review"
+                class="text-xs px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600">
+                Continue Review
+              </a>
+              {% endif %}
+
+              {% if log.cqc_status != 'in_review' and log.cqc_status != 'final' %}
+              <a href="/worker/log/{{ log.id }}/cqc-report/view" target="_blank"
+                class="text-xs px-3 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700">
+                View Report
+              </a>
+              <form method="POST" action="/worker/log/{{ log.id }}/cqc-review"
+                class="inline ai-loading-form"
+                data-loading-title="Reviewing CQC Report"
+                data-loading-messages="Analysing care record against CQC standards...|Checking compliance with Regulation 17...|Evaluating person-centred documentation...|Identifying practice improvements...|Generating learning content...|Compiling recommendations...">
+                <button type="submit"
+                  class="text-xs px-3 py-1 bg-amber-500 text-white rounded hover:bg-amber-600">
+                  Review with AI
+                </button>
+              </form>
+              {% endif %}
+            </div>
+          </div>
+
+          <p class="text-sm text-gray-600">{{ report.get('care_activity_summary', '-') }}</p>
+        </div>
+
+        {% elif log.translated_text %}
+        <form method="POST" action="/worker/log/{{ log.id }}/cqc-report"
+          class="mt-3 ai-loading-form"
+          data-loading-title="Generating CQC Report"
+          data-loading-messages="Reading your work submission...|Detecting care activity type...|Structuring formal care record...|Applying CQC compliance standards...|Writing person-centred observations...|Assessing risks and safeguarding...|Formatting final documentation...">
+          <button type="submit"
+            class="text-sm px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded font-medium">
+            Generate CQC Report
+          </button>
+        </form>
+        {% endif %}
+
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="p-6 bg-white rounded-lg border border-dashed border-gray-300 text-center">
+      <p class="text-gray-500">No work submitted yet. Use the form above to log your work.</p>
+    </div>
+    {% endif %}
+  </section>
+
+  {% if training_contents %}
+  <section>
+    <h3 class="text-lg font-semibold mb-3 text-gray-700">Your Training</h3>
+    <div class="grid gap-4">
+      {% for tc in training_contents %}
+      <div class="p-4 bg-white rounded-lg border border-gray-200">
+        <div class="flex items-center justify-between mb-2">
+          <h4 class="font-medium text-gray-900">{{ tc.program.title }}</h4>
+          <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full
+            {% if tc.status == 'ready' %}bg-green-100 text-green-800
+            {% elif tc.status == 'generating' %}bg-yellow-100 text-yellow-800
+            {% else %}bg-gray-100 text-gray-800{% endif %}">
+            {{ tc.status }}
+          </span>
+        </div>
+        {% if tc.status == 'ready' %}
+          {% if tc.video_url %}
+          <div class="mb-3">
+            <p class="text-sm font-medium text-gray-700 mb-1">Training Video:</p>
+            <video controls class="w-full rounded">
+              <source src="/training/content/{{ tc.id }}/video" type="{{ tc.video_mime or 'video/mp4' }}">
+              Your browser does not support video playback.
+            </video>
+          </div>
+          {% endif %}
+          <details class="mt-2">
+            <summary class="text-sm text-blue-600 cursor-pointer hover:underline">View training script</summary>
+            <div class="mt-2 p-3 bg-gray-50 rounded text-sm text-gray-700 whitespace-pre-wrap">
+              {{ (tc.script | from_json).get('script', '') if tc.script else 'No script available' }}
+            </div>
+          </details>
+        {% elif tc.status == 'generating' %}
+          <p class="text-sm text-yellow-600">Content is being generated...</p>
+        {% elif tc.status == 'failed' %}
+          <p class="text-sm text-red-600">Content generation failed. Ask your supervisor to retry.</p>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+</main>
+
+<script>
+  // Audio recording
+  let mediaRecorder = null;
+  let audioChunks = [];
+  let isRecording = false;
+  const recordBtn = document.getElementById('record-btn');
+  const recordText = document.getElementById('record-text');
+  const recordStatus = document.getElementById('record-status');
+  const audioInput = document.getElementById('audio-input');
+  const audioPreview = document.getElementById('audio-preview');
+
+  recordBtn.addEventListener('click', async () => {
+    if (!isRecording) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        audioChunks = [];
+        mediaRecorder.ondataavailable = (e) => { audioChunks.push(e.data); };
+        mediaRecorder.onstop = () => {
+          const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+          audioPreview.src = URL.createObjectURL(audioBlob);
+          audioPreview.classList.remove('hidden');
+          const file = new File([audioBlob], 'recording.webm', { type: 'audio/webm' });
+          const dt = new DataTransfer();
+          dt.items.add(file);
+          audioInput.files = dt.files;
+          recordStatus.textContent = 'Recording saved. Ready to submit.';
+          stream.getTracks().forEach(track => track.stop());
+        };
+        mediaRecorder.start();
+        isRecording = true;
+        recordBtn.classList.remove('bg-red-500', 'hover:bg-red-600');
+        recordBtn.classList.add('bg-gray-700', 'hover:bg-gray-800');
+        recordText.textContent = 'Stop Recording';
+        recordStatus.textContent = 'Recording...';
+      } catch (err) {
+        recordStatus.textContent = 'Microphone access denied.';
+      }
+    } else {
+      mediaRecorder.stop();
+      isRecording = false;
+      recordBtn.classList.remove('bg-gray-700', 'hover:bg-gray-800');
+      recordBtn.classList.add('bg-red-500', 'hover:bg-red-600');
+      recordText.textContent = 'Start Recording';
+    }
+  });
+
+  // Work submission loading
+  document.getElementById('work-form').addEventListener('submit', function () {
+    showLoading(
+      'Processing Work Submission',
+      [
+        'Receiving your input...',
+        'Detecting language...',
+        'Translating to English...',
+        'Generating text embedding...',
+        'Matching to active tasks...',
+        'Saving work log...'
+      ]
+    );
+  });
+
+  // AI loading overlay for CQC operations
+  function showLoading(title, messages) {
+    const overlay = document.getElementById('loading-overlay');
+    const titleEl = document.getElementById('loading-title');
+    const statusEl = document.getElementById('loading-status');
+    const barEl = document.getElementById('loading-bar');
+    const stepEl = document.getElementById('loading-step');
+
+    overlay.classList.remove('hidden');
+    titleEl.textContent = title;
+    statusEl.textContent = messages[0];
+    barEl.style.width = '5%';
+
+    let msgIndex = 0;
+    const totalMessages = messages.length;
+    const interval = setInterval(() => {
+      msgIndex++;
+      if (msgIndex < totalMessages) {
+        statusEl.textContent = messages[msgIndex];
+        const progress = Math.min(5 + ((msgIndex / totalMessages) * 85), 90);
+        barEl.style.width = progress + '%';
+        stepEl.textContent = 'Step ' + (msgIndex + 1) + ' of ' + totalMessages;
+      } else {
+        statusEl.textContent = 'Almost done, finalising...';
+        barEl.style.width = '95%';
+        stepEl.textContent = 'Finishing up...';
+        clearInterval(interval);
+      }
+    }, 3500);
+  }
+
+  // Attach loading overlay to all AI forms
+  document.querySelectorAll('.ai-loading-form').forEach(form => {
+    form.addEventListener('submit', function () {
+      const title = this.dataset.loadingTitle || 'Processing...';
+      const messages = (this.dataset.loadingMessages || 'Processing...').split('|');
+      showLoading(title, messages);
+    });
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,13 @@
+venv/
+.env
+instance/
+.git/
+.gitignore
+__pycache__/
+*.pyc
+*.pyo
+.agents/
+skills-lock.json
+*.md
+.dockerignore
+Dockerfile

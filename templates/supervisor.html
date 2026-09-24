@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+
+{% block title %}CareTaker - Supervisor{% endblock %}
+
+{% block content %}
+<main class="max-w-6xl mx-auto mt-8 p-6 space-y-8">
+  <h2 class="text-2xl font-bold">Supervisor Dashboard</h2>
+
+  <!-- Tasks Section -->
+  <section>
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-lg font-semibold text-gray-700">Tasks ({{ tasks | length }})</h3>
+      <a href="/supervisor/tasks/create" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded">+ Create Task</a>
+    </div>
+
+    {% if tasks %}
+      <div class="grid gap-4">
+        {% for t in tasks %}
+          <a href="/supervisor/tasks/{{ t.id }}" class="block p-4 bg-white rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow transition">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full
+                  {% if t.status == 'completed' %}bg-green-100 text-green-800
+                  {% elif t.status == 'in_progress' %}bg-yellow-100 text-yellow-800
+                  {% else %}bg-gray-100 text-gray-800{% endif %}">
+                  {{ t.status | replace('_', ' ') | title }}
+                </span>
+                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full
+                  {% if t.priority == 'high' %}bg-red-100 text-red-800
+                  {% elif t.priority == 'medium' %}bg-orange-100 text-orange-800
+                  {% else %}bg-blue-100 text-blue-800{% endif %}">
+                  {{ t.priority }}
+                </span>
+                <h4 class="font-medium text-gray-900">{{ t.title }}</h4>
+              </div>
+              <div class="text-sm text-gray-500">
+                {% if t.work_logs | length > 0 %}
+                  <span class="text-green-600 font-medium">{{ t.work_logs | length }} log(s) matched</span>
+                {% else %}
+                  <span class="text-gray-400">No work matched yet</span>
+                {% endif %}
+                {% if t.estimated_duration %}
+                  &middot; {{ t.estimated_duration }}
+                {% endif %}
+              </div>
+            </div>
+            <p class="mt-2 text-sm text-gray-600 truncate">{{ t.description[:120] }}{% if t.description|length > 120 %}...{% endif %}</p>
+          </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="p-6 bg-white rounded-lg border border-dashed border-gray-300 text-center">
+        <p class="text-gray-500 mb-2">No tasks created yet.</p>
+        <a href="/supervisor/tasks/create" class="text-blue-500 hover:underline text-sm">Create your first task</a>
+      </div>
+    {% endif %}
+  </section>
+
+  <!-- CQC Reports Section -->
+  <section>
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-lg font-semibold text-gray-700">
+        CQC Reports ({{ final_reports | length }})
+      </h3>
+    </div>
+
+    {% if final_reports %}
+      <div class="grid gap-3">
+        {% for log in final_reports %}
+          {% set report = log.cqc_report_final | from_json if log.cqc_report_final else log.cqc_report | from_json %}
+          <div class="p-4 bg-white rounded-lg border border-gray-200 hover:border-green-300 hover:shadow transition">
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center gap-3">
+                <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                  FINAL
+                </span>
+                <h4 class="font-medium text-gray-900">
+                  {{ report.get('report_title', 'Care Record') if report else 'Care Record' }}
+                </h4>
+              </div>
+              <div class="flex items-center gap-3 text-sm">
+                <span class="text-gray-500">
+                  {{ log.created_at.strftime('%d %b %Y %H:%M') if log.created_at else '' }}
+                </span>
+                <a href="/supervisor/reports/{{ log.id }}" target="_blank"
+                  class="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded">
+                  View Report
+                </a>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-4 text-sm text-gray-600">
+              <div class="flex items-center gap-1">
+                <span class="font-medium text-gray-700">Worker:</span>
+                <span>{{ log.worker.username }}</span>
+              </div>
+
+              {% if log.task %}
+              <div class="flex items-center gap-1">
+                <span class="font-medium text-gray-700">Task:</span>
+                <span>{{ log.task.title }}</span>
+                <span class="text-xs text-gray-400">({{ (log.match_score * 100) | int }}% match)</span>
+              </div>
+              {% endif %}
+            </div>
+
+            {% if report %}
+            <p class="mt-2 text-sm text-gray-500 truncate">
+              {{ report.get('care_activity_summary', '')[:150] }}{% if report.get('care_activity_summary', '')|length > 150 %}...{% endif %}
+            </p>
+
+            {% if report.get('cqc_compliance_tags') %}
+              <div class="flex flex-wrap gap-1 mt-2">
+                {% for tag in report.get('cqc_compliance_tags', []) %}
+                  <span class="px-2 py-0.5 text-xs font-semibold rounded-full
+                    {% if tag == 'Safe' %}bg-green-100 text-green-800
+                    {% elif tag == 'Effective' %}bg-blue-100 text-blue-800
+                    {% elif tag == 'Caring' %}bg-pink-100 text-pink-800
+                    {% elif tag == 'Responsive' %}bg-yellow-100 text-yellow-800
+                    {% elif tag == 'Well-led' %}bg-purple-100 text-purple-800
+                    {% else %}bg-gray-100 text-gray-700{% endif %}">
+                    {{ tag }}
+                  </span>
+                {% endfor %}
+              </div>
+            {% endif %}
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="p-6 bg-white rounded-lg border border-dashed border-gray-300 text-center">
+        <p class="text-gray-500">No finalised CQC reports yet.</p>
+        <p class="text-xs text-gray-400 mt-1">Reports appear here after workers complete the full review process.</p>
+      </div>
+    {% endif %}
+  </section>
+
+  <!-- Training Programs Section -->
+  <section>
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-lg font-semibold text-gray-700">Training Programs ({{ programs | length }})</h3>
+      <a href="/supervisor/training/create" class="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white text-sm rounded">+ Create Program</a>
+    </div>
+
+    {% if programs %}
+      <div class="grid gap-4">
+        {% for p in programs %}
+          <a href="/supervisor/training/{{ p.id }}" class="block p-4 bg-white rounded-lg border border-gray-200 hover:border-purple-300 hover:shadow transition">
+            <div class="flex items-center justify-between">
+              <h4 class="font-medium text-gray-900">{{ p.title }}</h4>
+              <span class="text-sm text-gray-500">{{ p.contents | length }} content(s) generated</span>
+            </div>
+            <p class="mt-1 text-sm text-gray-600 truncate">{{ p.description[:120] }}{% if p.description|length > 120 %}...{% endif %}</p>
+          </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="p-6 bg-white rounded-lg border border-dashed border-gray-300 text-center">
+        <p class="text-gray-500 mb-2">No training programs yet.</p>
+        <a href="/supervisor/training/create" class="text-purple-500 hover:underline text-sm">Create your first program</a>
+      </div>
+    {% endif %}
+  </section>
+
+  <!-- Workers Section -->
+  <section>
+    <h3 class="text-lg font-semibold mb-3 text-gray-700">Workers ({{ workers | length }})</h3>
+
+    {% if workers %}
+      <div class="overflow-x-auto rounded-lg border border-gray-200">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-100">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Language</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Age</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Work Logs</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CQC Reports</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            {% for w in workers %}
+              {% set worker_final_count = w.work_logs | selectattr('cqc_status', 'equalto', 'final') | list | length %}
+              <tr class="hover:bg-gray-50">
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ w.username }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ w.preferred_language or 'en' }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ w.age or '-' }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ w.work_logs | length }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                  {% if worker_final_count > 0 %}
+                    <span class="text-green-600 font-medium">{{ worker_final_count }} finalised</span>
+                  {% else %}
+                    <span class="text-gray-400">None</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="text-gray-500">No workers registered yet.</p>
+    {% endif %}
+  </section>
+</main>
+{% endblock %}

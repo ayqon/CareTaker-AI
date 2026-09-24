@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CQC Care Record</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @media print {
+      .no-print { display: none !important; }
+      body { font-size: 11pt; }
+      .report-container { box-shadow: none !important; border: none !important; }
+    }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+  <div class="no-print bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between">
+      <a href="javascript:history.back()" class="text-sm text-blue-600 hover:underline">Back to Dashboard</a>
+    <button onclick="window.print()"
+      class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded">
+      Print / Save as PDF
+    </button>
+  </div>
+
+  <div class="max-w-3xl mx-auto my-8 bg-white p-10 rounded-lg shadow report-container">
+
+    <div class="border-b-2 border-indigo-600 pb-4 mb-6">
+      <div class="flex items-start justify-between">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900">{{ report.get('report_title', 'Care Record') }}</h1>
+          <p class="text-sm text-gray-500 mt-1">
+            {% if is_final is defined and is_final %}
+              CQC-Compliant Care Record — Reviewed and Finalised
+            {% else %}
+              CQC-Compliant Care Record — Draft
+            {% endif %}
+          </p>
+        </div>
+        <div class="text-right text-xs text-gray-400">
+          <p>Generated: {{ log.created_at.strftime('%d %B %Y') if log.created_at else 'N/A' }}</p>
+          <p>Ref: CQC-WL-{{ log.id }}-{{ log.created_at.strftime('%Y%m%d') if log.created_at else '000' }}</p>
+        </div>
+      </div>
+
+      {% if report.get('cqc_compliance_tags') %}
+        <div class="flex flex-wrap gap-1.5 mt-3">
+          {% for tag in report.get('cqc_compliance_tags', []) %}
+            <span class="px-2.5 py-0.5 text-xs font-semibold rounded-full
+              {% if tag == 'Safe' %}bg-green-100 text-green-800 border border-green-300
+              {% elif tag == 'Effective' %}bg-blue-100 text-blue-800 border border-blue-300
+              {% elif tag == 'Caring' %}bg-pink-100 text-pink-800 border border-pink-300
+              {% elif tag == 'Responsive' %}bg-yellow-100 text-yellow-800 border border-yellow-300
+              {% elif tag == 'Well-led' %}bg-purple-100 text-purple-800 border border-purple-300
+              {% else %}bg-gray-100 text-gray-700 border border-gray-300{% endif %}">
+              {{ tag }}
+            </span>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="grid grid-cols-2 gap-4 mb-6 text-sm">
+      <div class="bg-gray-50 rounded p-3">
+        <p class="font-semibold text-gray-500 text-xs uppercase tracking-wide mb-1">Service User Reference</p>
+        <p class="text-gray-800">{{ report.get('service_user_reference', '-') }}</p>
+      </div>
+      <div class="bg-gray-50 rounded p-3">
+        <p class="font-semibold text-gray-500 text-xs uppercase tracking-wide mb-1">Date and Time of Activity</p>
+        <p class="text-gray-800">{{ report.get('date_and_time', '-') }}</p>
+      </div>
+      <div class="bg-gray-50 rounded p-3">
+        <p class="font-semibold text-gray-500 text-xs uppercase tracking-wide mb-1">Care Worker</p>
+        <p class="text-gray-800">{{ report.get('care_worker', '-') }}</p>
+      </div>
+      <div class="bg-gray-50 rounded p-3">
+        <p class="font-semibold text-gray-500 text-xs uppercase tracking-wide mb-1">Record Reference</p>
+        <p class="text-gray-800">CQC-WL-{{ log.id }}</p>
+      </div>
+    </div>
+
+    <div class="space-y-5 text-sm leading-relaxed">
+
+      <section>
+        <h2 class="text-base font-bold text-indigo-900 border-b border-gray-200 pb-1 mb-2">
+          1. Care Activity Summary
+        </h2>
+        <p class="text-gray-700">{{ report.get('care_activity_summary', '-') }}</p>
+      </section>
+
+      <section>
+        <h2 class="text-base font-bold text-indigo-900 border-b border-gray-200 pb-1 mb-2">
+          2. Detailed Care Record
+        </h2>
+        <p class="text-gray-700 whitespace-pre-wrap">{{ report.get('detailed_care_record', '-') }}</p>
+      </section>
+
+      <section>
+        <h2 class="text-base font-bold text-indigo-900 border-b border-gray-200 pb-1 mb-2">
+          3. Person-Centred Observations
+        </h2>
+        <p class="text-gray-700 whitespace-pre-wrap">{{ report.get('person_centred_observations', '-') }}</p>
+      </section>
+
+      <section>
+        <h2 class="text-base font-bold text-indigo-900 border-b border-gray-200 pb-1 mb-2">
+          4. Outcomes and Wellbeing
+        </h2>
+        <p class="text-gray-700 whitespace-pre-wrap">{{ report.get('outcomes_and_wellbeing', '-') }}</p>
+      </section>
+
+      <section>
+        <h2 class="text-base font-bold text-indigo-900 border-b border-gray-200 pb-1 mb-2">
+          5. Risks and Concerns
+        </h2>
+        <p class="text-gray-700 whitespace-pre-wrap">{{ report.get('risks_and_concerns', '-') }}</p>
+      </section>
+
+      <section>
+        <h2 class="text-base font-bold text-indigo-900 border-b border-gray-200 pb-1 mb-2">
+          6. Safeguarding Notes
+        </h2>
+        <p class="text-gray-700 whitespace-pre-wrap">{{ report.get('safeguarding_notes', '-') }}</p>
+      </section>
+
+      <section>
+        <h2 class="text-base font-bold text-indigo-900 border-b border-gray-200 pb-1 mb-2">
+          7. Follow-up Actions Required
+        </h2>
+        <p class="text-gray-700 whitespace-pre-wrap">{{ report.get('follow_up_actions', '-') }}</p>
+      </section>
+
+      {% if report.get('reflective_notes') %}
+      <section>
+        <h2 class="text-base font-bold text-indigo-900 border-b border-gray-200 pb-1 mb-2">
+          8. Reflective Practice Notes
+        </h2>
+        <p class="text-gray-700 whitespace-pre-wrap">{{ report.get('reflective_notes', '-') }}</p>
+      </section>
+      {% endif %}
+
+    </div>
+
+    <div class="mt-8 pt-4 border-t-2 border-indigo-600">
+      <div class="grid grid-cols-2 gap-8 text-sm">
+        <div>
+          <p class="font-semibold text-gray-700">Care Worker Signature</p>
+          <div class="mt-6 border-b border-gray-400 w-48"></div>
+          <p class="text-xs text-gray-500 mt-1">{{ report.get('care_worker', '-') }}</p>
+        </div>
+        <div>
+          <p class="font-semibold text-gray-700">Supervisor Countersignature</p>
+          <div class="mt-6 border-b border-gray-400 w-48"></div>
+          <p class="text-xs text-gray-500 mt-1">Date: _______________</p>
+        </div>
+      </div>
+      <p class="text-xs text-gray-400 mt-6 text-center">
+        {% if is_final is defined and is_final %}
+          This record has been reviewed and finalised. All sections have been verified for CQC compliance.
+        {% else %}
+          This is a draft record generated with AI assistance and should be reviewed for accuracy before filing.
+        {% endif %}
+        CQC-compliant care records must be contemporaneous, factual, and signed by the responsible care worker.
+      </p>
+    </div>
+
+  </div>
+
+</body>
+</html>

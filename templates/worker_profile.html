@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}CareTaker - Profile{% endblock %}
+
+{% block content %}
+<main class="max-w-md mx-auto mt-8 p-6">
+  <h2 class="text-2xl font-bold mb-6">Your Profile</h2>
+
+  <div class="bg-white rounded-lg border border-gray-200 p-6">
+    <form method="POST" action="/worker/profile" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+        <input type="text" value="{{ current_user.username }}" disabled
+          class="w-full px-3 py-2 border border-gray-200 rounded bg-gray-50 text-gray-500" />
+      </div>
+
+      <div>
+        <label for="preferred_language" class="block text-sm font-medium text-gray-700 mb-1">Preferred Language</label>
+        <select id="preferred_language" name="preferred_language"
+          class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+          {% set langs = [
+            ('en', 'English'), ('es', 'Spanish'), ('hi', 'Hindi'), ('ta', 'Tamil'),
+            ('te', 'Telugu'), ('bn', 'Bengali'), ('mr', 'Marathi'), ('gu', 'Gujarati'),
+            ('kn', 'Kannada'), ('ml', 'Malayalam'), ('fr', 'French'), ('ar', 'Arabic'),
+            ('pt', 'Portuguese'), ('zh', 'Chinese (Mandarin)'), ('ja', 'Japanese'),
+            ('ko', 'Korean'), ('de', 'German'), ('ru', 'Russian'), ('it', 'Italian'),
+            ('tr', 'Turkish'), ('vi', 'Vietnamese'), ('id', 'Indonesian'),
+            ('th', 'Thai'), ('nl', 'Dutch'), ('pl', 'Polish')
+          ] %}
+          {% for code, name in langs %}
+            <option value="{{ code }}" {% if current_user.preferred_language == code %}selected{% endif %}>{{ name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label for="age" class="block text-sm font-medium text-gray-700 mb-1">Age</label>
+        <input type="number" id="age" name="age" min="16" max="100"
+          value="{{ current_user.age or '' }}"
+          class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500" />
+      </div>
+
+      <div>
+        <label for="gender" class="block text-sm font-medium text-gray-700 mb-1">Gender</label>
+        <select id="gender" name="gender"
+          class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <option value="" {% if not current_user.gender %}selected{% endif %}>Prefer not to say</option>
+          <option value="male" {% if current_user.gender == 'male' %}selected{% endif %}>Male</option>
+          <option value="female" {% if current_user.gender == 'female' %}selected{% endif %}>Female</option>
+          <option value="other" {% if current_user.gender == 'other' %}selected{% endif %}>Other</option>
+        </select>
+      </div>
+
+      <button type="submit"
+        class="w-full py-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded">
+        Update Profile
+      </button>
+    </form>
+  </div>
+
+  <div class="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+    <p class="text-sm text-blue-700">
+      <strong>Why this matters:</strong> Your profile information helps the AI generate personalised training content in your preferred language, tailored to your experience level.
+    </p>
+  </div>
+</main>
+{% endblock %}

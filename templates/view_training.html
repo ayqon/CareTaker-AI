@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block title %}CareTaker - {{ program.title }}{% endblock %}
+
+{% block content %}
+<main class="max-w-4xl mx-auto mt-8 p-6 space-y-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <a href="/supervisor" class="text-sm text-blue-500 hover:underline">&larr; Back to Dashboard</a>
+      <h2 class="text-2xl font-bold mt-2">{{ program.title }}</h2>
+    </div>
+    <form method="POST" action="/supervisor/training/{{ program.id }}/generate" id="generate-form">
+      <button type="submit" id="generate-btn" class="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white text-sm rounded">
+        Generate Content for All Workers
+      </button>
+    </form>
+  </div>
+
+  <!-- Program Details -->
+  <div class="bg-white rounded-lg border border-gray-200 p-6">
+    <h3 class="text-sm font-semibold text-gray-500 uppercase mb-2">Description</h3>
+    <p class="text-gray-700">{{ program.description }}</p>
+
+    {% set kp = program.get_key_points() %}
+    {% if kp %}
+      <h3 class="text-sm font-semibold text-gray-500 uppercase mt-4 mb-2">Key Points</h3>
+      <ul class="list-disc list-inside text-gray-700 space-y-1">
+        {% for point in kp %}
+          {% if point.strip() %}
+            <li>{{ point }}</li>
+          {% endif %}
+        {% endfor %}
+      </ul>
+    {% endif %}
+  </div>
+
+  <!-- Workers & Content Status -->
+  <div class="bg-white rounded-lg border border-gray-200 p-6">
+    <h3 class="text-sm font-semibold text-gray-500 uppercase mb-3">Personalised Content Status</h3>
+
+    {% if workers %}
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Worker</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Language</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Age</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Gender</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Content</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200">
+            {% for w in workers %}
+              {% set content = contents | selectattr('worker_id', 'equalto', w.id) | list | first %}
+              <tr class="hover:bg-gray-50">
+                <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ w.username }}</td>
+                <td class="px-4 py-3 text-sm text-gray-500">{{ w.preferred_language or 'en' }}</td>
+                <td class="px-4 py-3 text-sm text-gray-500">{{ w.age or '-' }}</td>
+                <td class="px-4 py-3 text-sm text-gray-500">{{ w.gender or '-' }}</td>
+                <td class="px-4 py-3">
+                  {% if content %}
+                    <span class="inline-flex px-2 py-0.5 text-xs font-semibold rounded-full
+                      {% if content.status == 'ready' %}bg-green-100 text-green-800
+                      {% elif content.status == 'generating' %}bg-yellow-100 text-yellow-800
+                      {% elif content.status == 'failed' %}bg-red-100 text-red-800
+                      {% else %}bg-gray-100 text-gray-800{% endif %}">
+                      {{ content.status }}
+                    </span>
+                  {% else %}
+                    <span class="inline-flex px-2 py-0.5 text-xs font-semibold rounded-full bg-gray-100 text-gray-500">
+                      Not generated
+                    </span>
+                  {% endif %}
+                </td>
+                <td class="px-4 py-3 text-sm">
+                  {% if content and content.status == 'ready' %}
+                    <div class="flex items-center gap-2">
+                      {% if content.video_url %}
+                        <span class="text-green-600" title="Video available">Video</span>
+                      {% endif %}
+                      {% if content.script %}
+                        <span class="text-green-600" title="Script available">Script</span>
+                      {% endif %}
+                    </div>
+                  {% else %}
+                    <span class="text-gray-400">-</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="text-gray-500 text-sm">No workers registered yet. Content will be generated once workers sign up.</p>
+    {% endif %}
+  </div>
+
+  <!-- Preview of Generated Content -->
+  {% set ready_contents = contents | selectattr('status', 'equalto', 'ready') | list %}
+  {% if ready_contents %}
+    <div class="bg-white rounded-lg border border-gray-200 p-6">
+      <h3 class="text-sm font-semibold text-gray-500 uppercase mb-3">Content Preview</h3>
+      <div class="space-y-6">
+        {% for tc in ready_contents %}
+          <div class="p-4 border border-gray-100 rounded-lg bg-gray-50">
+            <h4 class="font-medium text-gray-900 mb-2">{{ tc.worker.username }} ({{ tc.language }})</h4>
+
+            {% if tc.video_url %}
+              <div class="mb-3">
+                <video controls class="w-full rounded">
+                  <source src="/training/content/{{ tc.id }}/video" type="{{ tc.video_mime or 'video/mp4' }}">
+                  Your browser does not support video playback.
+                </video>
+              </div>
+            {% endif %}
+
+            {% if tc.script %}
+              <details>
+                <summary class="text-sm text-purple-600 cursor-pointer hover:underline">View script</summary>
+                <div class="mt-2 p-3 bg-white rounded text-sm text-gray-700 whitespace-pre-wrap">{{ (tc.script | from_json).get('script', '') if tc.script else '' }}</div>
+              </details>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+</main>
+
+<script>
+  document.getElementById('generate-form').addEventListener('submit', function() {
+    const btn = document.getElementById('generate-btn');
+    btn.textContent = 'Generating (this may take a few minutes)...';
+    btn.disabled = true;
+    btn.classList.add('opacity-50');
+  });
+</script>
+{% endblock %}

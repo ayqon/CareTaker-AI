@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+
+{% block title %}CQC Review{% endblock %}
+
+{% block content %}
+
+<!-- Loading Overlay -->
+<div id="loading-overlay" class="hidden fixed inset-0 bg-gray-900 bg-opacity-70 z-50 flex items-center justify-center">
+  <div class="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full mx-4">
+    <div class="text-center">
+      <div class="inline-block mb-4">
+        <svg class="animate-spin h-10 w-10 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+        </svg>
+      </div>
+      <h3 id="loading-title" class="text-lg font-bold text-gray-900 mb-2">Processing...</h3>
+      <p id="loading-status" class="text-sm text-gray-500 mb-4">Starting...</p>
+      <div class="w-full bg-gray-200 rounded-full h-2 mb-3">
+        <div id="loading-bar" class="bg-indigo-600 h-2 rounded-full transition-all duration-1000 ease-out" style="width: 0%"></div>
+      </div>
+      <p id="loading-step" class="text-xs text-gray-400">This may take 15-30 seconds</p>
+    </div>
+  </div>
+</div>
+
+<main class="max-w-4xl mx-auto mt-8 p-6 space-y-6">
+
+  <div class="flex items-center justify-between">
+    <div>
+      <a href="/worker" class="text-sm text-blue-600 hover:underline">Back to Dashboard</a>
+      <h2 class="text-2xl font-bold mt-2">AI Review: {{ report.get('report_title', 'Care Record') }}</h2>
+    </div>
+    <div class="flex items-center gap-2">
+      {% if log.cqc_status == 'final' %}
+        <span class="px-3 py-1 bg-green-100 text-green-800 text-sm font-semibold rounded-full">FINAL</span>
+      {% elif log.cqc_status == 'in_review' %}
+        <span class="px-3 py-1 bg-yellow-100 text-yellow-800 text-sm font-semibold rounded-full">IN REVIEW</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="grid grid-cols-2 gap-4">
+    <div class="bg-white rounded-lg border border-gray-200 p-4 text-center">
+      <p class="text-xs text-gray-500 uppercase tracking-wide">Practice Score</p>
+      <p class="text-3xl font-bold mt-1
+        {% if practice_score >= 80 %}text-green-600
+        {% elif practice_score >= 50 %}text-yellow-600
+        {% else %}text-red-600{% endif %}">
+        {{ practice_score }}/100
+      </p>
+    </div>
+    <div class="bg-white rounded-lg border border-gray-200 p-4 text-center">
+      <p class="text-xs text-gray-500 uppercase tracking-wide">Completeness Score</p>
+      <p class="text-3xl font-bold mt-1
+        {% if completeness_score >= 80 %}text-green-600
+        {% elif completeness_score >= 50 %}text-yellow-600
+        {% else %}text-red-600{% endif %}">
+        {{ completeness_score }}/100
+      </p>
+    </div>
+  </div>
+
+  {% if log.cqc_status == 'final' and log.cqc_report_final %}
+    <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="font-semibold text-green-800">Final Report Ready</h3>
+          <p class="text-sm text-green-700 mt-1">
+            All recommendations addressed. Your final CQC-compliant report is complete.
+          </p>
+        </div>
+        <a href="/worker/log/{{ log.id }}/cqc-report/final/view" target="_blank"
+          class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded">
+          Open Final Report
+        </a>
+      </div>
+    </div>
+  {% endif %}
+
+  <form method="POST" action="/worker/log/{{ log.id }}/cqc-review/respond" id="review-form">
+    <div class="space-y-4">
+      <h3 class="text-lg font-semibold text-gray-700">
+        Recommendations ({{ recommendations | length }})
+      </h3>
+
+      {% for rec in recommendations %}
+      <div class="bg-white rounded-lg border-l-4 p-5
+        {% if rec.severity == 'critical' %}border-red-500
+        {% elif rec.severity == 'important' %}border-yellow-500
+        {% else %}border-blue-400{% endif %}">
+
+        <div class="flex items-start justify-between mb-3">
+          <div class="flex items-center gap-2">
+            {% if rec.category == 'practice_issue' %}
+              <span class="text-red-500 text-lg">&#9888;</span>
+            {% elif rec.category == 'missing_info' %}
+              <span class="text-yellow-500 text-lg">&#9679;</span>
+            {% else %}
+              <span class="text-blue-500 text-lg">&#8505;</span>
+            {% endif %}
+            <h4 class="font-semibold text-gray-900">{{ rec.title }}</h4>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="px-2 py-0.5 text-xs font-semibold rounded-full
+              {% if rec.severity == 'critical' %}bg-red-100 text-red-800
+              {% elif rec.severity == 'important' %}bg-yellow-100 text-yellow-800
+              {% else %}bg-blue-100 text-blue-800{% endif %}">
+              {{ rec.severity }}
+            </span>
+            <span class="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600">
+              {{ rec.category | replace('_', ' ') | title }}
+            </span>
+          </div>
+        </div>
+
+        <p class="text-sm text-gray-700 mb-3">{{ rec.description }}</p>
+
+        {% if rec.learning_content %}
+        <details class="mb-3" {% if rec.severity == 'critical' %}open{% endif %}>
+          <summary class="text-sm font-medium text-indigo-600 cursor-pointer hover:underline">
+            Why this matters
+          </summary>
+          <div class="mt-2 p-3 bg-indigo-50 rounded text-sm text-gray-700 whitespace-pre-wrap">{{ rec.learning_content }}</div>
+        </details>
+        {% endif %}
+
+        {% if rec.suggested_text %}
+        <details class="mb-3">
+          <summary class="text-sm font-medium text-gray-500 cursor-pointer hover:underline">
+            Suggested report text
+          </summary>
+          <div class="mt-2 p-3 bg-gray-50 rounded text-sm text-gray-600 italic">{{ rec.suggested_text }}</div>
+        </details>
+        {% endif %}
+
+        <div class="mt-3 pt-3 border-t border-gray-100">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Your response</label>
+
+          <select name="status_{{ rec.id }}"
+            class="mb-2 w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            <option value="pending" {% if rec.status == 'pending' %}selected{% endif %}>
+              Pending
+            </option>
+            <option value="addressed" {% if rec.status == 'addressed' %}selected{% endif %}>
+              Addressed — additional information provided
+            </option>
+            <option value="acknowledged" {% if rec.status == 'acknowledged' %}selected{% endif %}>
+              Acknowledged — I will improve next time
+            </option>
+            <option value="dismissed" {% if rec.status == 'dismissed' %}selected{% endif %}>
+              Not applicable
+            </option>
+          </select>
+
+          {% if rec.category == 'practice_issue' %}
+          <textarea name="response_{{ rec.id }}" rows="2"
+            class="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            placeholder="Explain what happened or what you will do differently...">{{ rec.worker_response or '' }}</textarea>
+          {% elif rec.category == 'missing_info' %}
+          <textarea name="response_{{ rec.id }}" rows="3"
+            class="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            placeholder="Provide the missing information here...">{{ rec.worker_response or '' }}</textarea>
+          {% else %}
+          <textarea name="response_{{ rec.id }}" rows="1"
+            class="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            placeholder="Any notes (optional)...">{{ rec.worker_response or '' }}</textarea>
+          {% endif %}
+
+          {% if rec.status != 'pending' %}
+          <p class="mt-1 text-xs text-green-600">Status: {{ rec.status }}</p>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="mt-6 flex items-center gap-4">
+      <button type="submit"
+        class="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded">
+        Save Responses
+      </button>
+
+      {% if log.cqc_status != 'final' %}
+      <button type="submit" formaction="/worker/log/{{ log.id }}/cqc-report/finalise"
+        formmethod="POST"
+        id="finalise-btn"
+        class="px-6 py-2 bg-green-500 hover:bg-green-600 text-white font-semibold rounded ai-finalise-btn">
+        Generate Final Report
+      </button>
+      {% endif %}
+    </div>
+  </form>
+</main>
+
+<script>
+  function showLoading(title, messages) {
+    const overlay = document.getElementById('loading-overlay');
+    const titleEl = document.getElementById('loading-title');
+    const statusEl = document.getElementById('loading-status');
+    const barEl = document.getElementById('loading-bar');
+    const stepEl = document.getElementById('loading-step');
+
+    overlay.classList.remove('hidden');
+    titleEl.textContent = title;
+    statusEl.textContent = messages[0];
+    barEl.style.width = '5%';
+
+    let msgIndex = 0;
+    const totalMessages = messages.length;
+    const interval = setInterval(() => {
+      msgIndex++;
+      if (msgIndex < totalMessages) {
+        statusEl.textContent = messages[msgIndex];
+        const progress = Math.min(5 + ((msgIndex / totalMessages) * 85), 90);
+        barEl.style.width = progress + '%';
+        stepEl.textContent = 'Step ' + (msgIndex + 1) + ' of ' + totalMessages;
+      } else {
+        statusEl.textContent = 'Almost done, finalising...';
+        barEl.style.width = '95%';
+        stepEl.textContent = 'Finishing up...';
+        clearInterval(interval);
+      }
+    }, 4000);
+  }
+
+  // Finalise button loading
+  const finaliseBtn = document.querySelector('.ai-finalise-btn');
+  if (finaliseBtn) {
+    finaliseBtn.addEventListener('click', function (e) {
+      // Let the form submit naturally but show loading
+      showLoading('Generating Final Report', [
+        'Reading your responses...',
+        'Incorporating additional information...',
+        'Updating care record sections...',
+        'Adding reflective practice notes...',
+        'Verifying CQC compliance...',
+        'Formatting final documentation...',
+        'Running final quality check...'
+      ]);
+    });
+  }
+</script>
+{% endblock %}
